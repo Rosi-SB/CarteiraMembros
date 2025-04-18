@@ -9,7 +9,7 @@
     "pdfkit": "^0.17.0",
     "xlsx": "^0.18.5"
   },
-  "name": "2versao",
+  "name": "carteira-membros",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
