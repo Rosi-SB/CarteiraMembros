@@ -1,0 +1,311 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Carteirinhas - Igreja Assembleia de Deus</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .header-logo {
+      max-height: 80px;
+    }
+
+    .step-container {
+      background-color: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .step-number {
+      background-color: #0d6efd;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 10px;
+    }
+
+    .status-indicator {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .status-success {
+      background-color: #198754;
+    }
+
+    .status-warning {
+      background-color: #ffc107;
+    }
+
+    .status-danger {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4 mb-5">
+    <header class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h1>Sistema de Carteirinhas</h1>
+        <h5 class="text-muted">Igreja Assembleia de Deus – Ministério de Belém (Campo 1207 - Catanduva-SP)</h5>
+      </div>
+      <img src="/logo.png" alt="Logo da Igreja" class="header-logo">
+    </header>
+
+    <div class="alert alert-primary" role="alert">
+      <strong>Bem-vindo!</strong> Este sistema permite gerar carteirinhas para os membros da igreja de forma simples e
+      rápida.
+    </div>
+
+    <!-- Passo 1: Upload da Planilha -->
+    <div class="step-container">
+      <h3><span class="step-number">1</span> Planilha de Dados</h3>
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p>Faça o upload da planilha com os dados dos membros (<code>SEDE-Cadastro-Membros.xlsx</code>).</p>
+          <form action="/upload-excel" method="post" enctype="multipart/form-data">
+            <div class="input-group mb-3">
+              <input type="file" class="form-control" name="excel" accept=".xlsx">
+              <button class="btn btn-primary" type="submit">Enviar</button>
+            </div>
+          </form>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-2">
+            <div class="status-indicator <%= members.length > 0 ? 'status-success' : 'status-danger' %>"></div>
+            <span>
+              <%= members.length> 0 ? 'Planilha carregada' : 'Planilha não carregada' %>
+            </span>
+          </div>
+          <% if (members.length> 0) { %>
+            <div class="alert alert-success">
+              <strong>
+                <%= members.length %> membros
+              </strong> encontrados na planilha.
+            </div>
+            <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passo 2: Upload dos Templates -->
+    <div class="step-container">
+      <h3><span class="step-number">2</span> Templates de Carteirinha</h3>
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p>Faça o upload das imagens de template (frente e verso).</p>
+          <form action="/upload-templates" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label class="form-label">Template da Frente:</label>
+              <input type="file" class="form-control" name="template" accept="image/png,image/jpeg">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Template do Verso:</label>
+              <input type="file" class="form-control" name="template" accept="image/png,image/jpeg">
+            </div>
+            <button class="btn btn-primary" type="submit">Enviar Templates</button>
+          </form>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-2">
+            <div
+              class="status-indicator <%= templatesExist.front && templatesExist.back ? 'status-success' : templatesExist.front || templatesExist.back ? 'status-warning' : 'status-danger' %>">
+            </div>
+            <span>
+              <% if (templatesExist.front && templatesExist.back) { %>
+                Ambos os templates carregados
+                <% } else if (templatesExist.front || templatesExist.back) { %>
+                  Template parcialmente carregado
+                  <% } else { %>
+                    Templates não carregados
+                    <% } %>
+            </span>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <div class="card" style="width: 10rem;">
+              <div class="card-body text-center">
+                <h5 class="card-title">Frente</h5>
+                <% if (templatesExist.front) { %>
+                  <span class="text-success"><i class="bi bi-check-circle-fill"></i> OK</span>
+                  <% } else { %>
+                    <span class="text-danger"><i class="bi bi-x-circle-fill"></i> Faltando</span>
+                    <% } %>
+              </div>
+            </div>
+            <div class="card" style="width: 10rem;">
+              <div class="card-body text-center">
+                <h5 class="card-title">Verso</h5>
+                <% if (templatesExist.back) { %>
+                  <span class="text-success"><i class="bi bi-check-circle-fill"></i> OK</span>
+                  <% } else { %>
+                    <span class="text-danger"><i class="bi bi-x-circle-fill"></i> Faltando</span>
+                    <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passo 3: Upload das Fotos -->
+    <div class="step-container">
+      <h3><span class="step-number">3</span> Fotos dos Membros</h3>
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p>Faça o upload das fotos dos membros (JPG ou PNG).</p>
+          <form action="/upload-photos" method="post" enctype="multipart/form-data">
+            <div class="input-group mb-3">
+              <input type="file" class="form-control" name="photos" multiple accept="image/png,image/jpeg">
+              <button class="btn btn-primary" type="submit">Enviar Fotos</button>
+            </div>
+          </form>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-2">
+            <div class="status-indicator <%= photosExist ? 'status-success' : 'status-danger' %>"></div>
+            <span>
+              <%= photosExist ? 'Fotos carregadas' : 'Fotos não carregadas' %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passo 4: Geração das Carteirinhas -->
+    <div class="step-container">
+      <h3><span class="step-number">4</span> Geração de Carteirinhas</h3>
+      <div class="row">
+        <div class="col-md-6">
+          <p>Gere as carteirinhas após completar os passos anteriores.</p>
+
+          <div class="mb-3">
+            <form action="/generate-cards" method="post">
+              <button class="btn btn-success" type="submit" <%=members.length> 0 && templatesExist.front &&
+                templatesExist.back && photosExist ? '' : 'disabled' %>>
+                Gerar Carteirinhas Individuais
+              </button>
+            </form>
+          </div>
+
+          <div class="mb-3">
+            <form action="/generate-batch" method="post">
+              <button class="btn btn-primary" type="submit" <%=members.length> 0 && templatesExist.front &&
+                templatesExist.back && photosExist ? '' : 'disabled' %>>
+                Gerar PDF em Lote (Todas Carteirinhas)
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-2">
+            <div class="status-indicator <%= cardsExist ? 'status-success' : 'status-danger' %>"></div>
+            <span>
+              <%= cardsExist ? `${cardsCount} carteirinhas geradas` : 'Nenhuma carteirinha gerada' %>
+            </span>
+          </div>
+
+          <% if (batchPdfExists) { %>
+            <div class="alert alert-success mt-3">
+              <strong>PDF em lote gerado!</strong>
+              <a href="/download-batch" class="btn btn-sm btn-outline-success mt-2">
+                Baixar PDF com Todas Carteirinhas
+              </a>
+            </div>
+            <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Membros (se houver) -->
+    <% if (members.length> 0) { %>
+      <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Lista de Membros</h5>
+          <span class="badge bg-primary">
+            <%= members.length %> membros
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>Função</th>
+                  <th>CPF</th>
+                  <th>Nascimento</th>
+                  <th>Congregação</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% members.slice(0, 10).forEach((member, index)=> { %>
+                  <tr>
+                    <td>
+                      <%= index + 1 %>
+                    </td>
+                    <td>
+                      <%= member.Nome %>
+                    </td>
+                    <td>
+                      <%= member['Funcao'] || 'N/A' %>
+                    </td>
+                    <td>
+                      <%= member.CPF || 'N/A' %>
+                    </td>
+                    <td>
+                      <%= member['DataNascimento']  %>
+                    </td>
+                    <td>
+                      <%= member['Congregacao'] || 'N/A' %>
+                    </td>
+                  </tr>
+                  <% }); %>
+                    <% if (members.length> 10) { %>
+                      <tr>
+                        <td colspan="6" class="text-center">
+                          <em>... e mais <%= members.length - 10 %> membros</em>
+                        </td>
+                      </tr>
+                      <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <% } %>
+  </div>
+
+  <form action="/reset" method="post"
+    onsubmit="return confirm('Tem certeza que deseja limpar todos os dados e recomeçar?')">
+    <button class="btn btn-danger mt-4" type="submit">
+      Resetar sistema (limpar dados)
+    </button>
+  </form>
+
+
+
+  <footer class="bg-light py-3 mt-5">
+    <div class="container text-center">
+      <p class="text-muted mb-0">Sistema de Carteirinhas - Igreja Assembleia de Deus – Ministério de Belém (Campo 1207 -
+        Catanduva-SP)</p>
+      <p class="text-muted mb-0"><small>&copy; <%= new Date().getFullYear() %> - Todos os direitos reservados</small>
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
